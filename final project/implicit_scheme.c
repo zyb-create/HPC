@@ -23,7 +23,7 @@ int main(int argc,char **args)
   PetscReal      norm=0.0,tol=10.*PETSC_MACHINE_EPSILON,normt=1.0;  /* norm of solution error */
   PetscErrorCode ierr;
   PetscInt       i,n = 101,col[3],its,rstart,rend,nlocal,rank;
-  PetscScalar    zero = 0.0,value[3],omega = 1.6,dx = 0.01, kappa = 1.0, dt=0.01, rho=1, c=1, h=0, t=0;
+  PetscScalar    zero = 0.0,value[3],omega = 1.6,dx = 0.01, kappa = 1.0, dt=0.005, rho=1, c=1, h=0, t=0;
   PetscScalar    at = kappa*dt/(rho*c*dx*dx), bt = dt/(rho*c), ct = 2*dx*h/kappa, left = 0, right = 1, l=2.0;
   PetscScalar    pi = M_PI;
   PetscInt       step = 0;
@@ -90,7 +90,7 @@ int main(int argc,char **args)
   if (!rstart) 
   {
     rstart = 1;
-    i      = 0; col[0] = 0; col[1] = 1; value[0] = zero; value[1] = -2*at;
+    i      = 0; col[0] = 0; col[1] = 1; value[0] = 1+2*at; value[1] = -2*at;
     ierr   = MatSetValues(A,1,&i,2,col,value,INSERT_VALUES);CHKERRQ(ierr);
     ierr   = VecSetValue(x,i,left,INSERT_VALUES);CHKERRQ(ierr);
     ierr   = VecSetValue(f,i,zero,INSERT_VALUES);CHKERRQ(ierr);
@@ -99,14 +99,14 @@ int main(int argc,char **args)
   if (rend == n) 
   {
     rend = n-1;
-    i    = n-1; col[0] = n-2; col[1] = n-1; value[0] = -2*at; value[1] = zero;
+    i    = n-1; col[0] = n-2; col[1] = n-1; value[0] = -2*at; value[1] = 1+2*at;
     ierr = MatSetValues(A,1,&i,2,col,value,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(x,i,right,INSERT_VALUES);CHKERRQ(ierr);
     ierr = VecSetValue(f,i,zero,INSERT_VALUES);CHKERRQ(ierr);
   }
 
   /* Set entries corresponding to the mesh interior */
-  value[0] = -at; value[1] = 2*at; value[2] = -at;
+  value[0] = -at; value[1] = 1+2*at; value[2] = -at;
   for (i=rstart; i<rend; i++) 
   {
     col[0] = i-1; col[1] = i; col[2] = i+1;
@@ -185,7 +185,7 @@ int main(int argc,char **args)
   ierr = KSPSetFromOptions(ksp);CHKERRQ(ierr);
 
   ierr = VecSet(u,zero);CHKERRQ(ierr);
-  while(PetscAbsReal(norm-normt)>tol){
+  while(PetscAbsReal(norm-normt) > tol && step < 10000){
      ierr = VecCopy(u,ut);CHKERRQ(ierr);
      step = step + 1;
      normt= norm;
