@@ -1,14 +1,16 @@
-Sender: LSF System <lsfadmin@r01n26>
-Subject: Job 3807266: <mytest> in cluster <sustchpc> Done
+Sender: LSF System <lsfadmin@r01n04>
+Subject: Job 3810434: <mytest> in cluster <sustchpc> Done
 
-Job <mytest> was submitted from host <login05> by user <mae-zhangyb> in cluster <sustchpc> at Tue May 31 18:27:38 2022.
-Job was executed on host(s) <1*r01n26>, in queue <ser>, as user <mae-zhangyb> in cluster <sustchpc> at Tue May 31 18:27:39 2022.
+Job <mytest> was submitted from host <login05> by user <mae-zhangyb> in cluster <sustchpc> at Wed Jun  1 14:15:07 2022.
+Job was executed on host(s) <1*r01n04>, in queue <ser>, as user <mae-zhangyb> in cluster <sustchpc> at Wed Jun  1 14:15:07 2022.
                             <1*r01n17>
+                            <1*r01n19>
+                            <1*r01n21>
 </work/mae-zhangyb> was used as the home directory.
 </work/mae-zhangyb/test/HPC/HPC_Homework/final project/explicit> was used as the working directory.
-Started at Tue May 31 18:27:39 2022.
-Terminated at Tue May 31 18:27:40 2022.
-Results reported at Tue May 31 18:27:40 2022.
+Started at Wed Jun  1 14:15:07 2022.
+Terminated at Wed Jun  1 14:15:10 2022.
+Results reported at Wed Jun  1 14:15:10 2022.
 
 Your job looked like:
 
@@ -17,7 +19,7 @@ Your job looked like:
 #!/bin/bash
 #BSUB -J mytest
 #BSUB -q ser
-#BSUB -n 2
+#BSUB -n 4
 ## BSUB -W 00:05
 #BSUB -e log #%J.err
 #BSUB -o log #%J.out
@@ -33,7 +35,7 @@ rm -rf log out.txt
 # mpirun -np 2 ./smallest_eigenvalue.out -n 40 -ksp_type preonly -pc_type lu -pc_factor_mat_solver_type mumps >out.txt
 
 # mpirun -np 2 ./explicit_scheme.out >out.txt
-mpirun -np 1 ./ex.out >out.txt
+mpirun -np 4 ./ex.out >out.txt
 
 # mpirun -np 1 ./smallest_eigenvalue.out -n 4 -ksp_type richardson -pc_type asm >out.txt
 
@@ -72,16 +74,16 @@ Successfully completed.
 
 Resource usage summary:
 
-    CPU time :                                   0.22 sec.
-    Max Memory :                                 -
-    Average Memory :                             -
+    CPU time :                                   4.00 sec.
+    Max Memory :                                 13 MB
+    Average Memory :                             13.00 MB
     Total Requested Memory :                     -
     Delta Memory :                               -
     Max Swap :                                   -
-    Max Processes :                              -
-    Max Threads :                                -
-    Run time :                                   1 sec.
-    Turnaround time :                            2 sec.
+    Max Processes :                              7
+    Max Threads :                                9
+    Run time :                                   2 sec.
+    Turnaround time :                            3 sec.
 
 The output (if any) follows:
 
