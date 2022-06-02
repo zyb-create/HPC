@@ -1,14 +1,13 @@
-Sender: LSF System <lsfadmin@r01n26>
-Subject: Job 3807249: <mytest> in cluster <sustchpc> Done
+Sender: LSF System <lsfadmin@r13n45>
+Subject: Job 3810885: <mytest> in cluster <sustchpc> Done
 
-Job <mytest> was submitted from host <login05> by user <mae-zhangyb> in cluster <sustchpc> at Tue May 31 18:24:55 2022.
-Job was executed on host(s) <1*r01n26>, in queue <ser>, as user <mae-zhangyb> in cluster <sustchpc> at Tue May 31 18:24:55 2022.
-                            <1*r01n17>
+Job <mytest> was submitted from host <login05> by user <mae-zhangyb> in cluster <sustchpc> at Wed Jun  1 16:57:32 2022.
+Job was executed on host(s) <2*r13n45>, in queue <debug>, as user <mae-zhangyb> in cluster <sustchpc> at Wed Jun  1 16:57:32 2022.
 </work/mae-zhangyb> was used as the home directory.
 </work/mae-zhangyb/test/HPC/HPC_Homework/final project/implicit> was used as the working directory.
-Started at Tue May 31 18:24:55 2022.
-Terminated at Tue May 31 18:25:01 2022.
-Results reported at Tue May 31 18:25:01 2022.
+Started at Wed Jun  1 16:57:32 2022.
+Terminated at Wed Jun  1 16:57:38 2022.
+Results reported at Wed Jun  1 16:57:38 2022.
 
 Your job looked like:
 
@@ -16,12 +15,12 @@ Your job looked like:
 # LSBATCH: User input
 #!/bin/bash
 #BSUB -J mytest
-#BSUB -q ser
+#BSUB -q debug
 #BSUB -n 2
 ## BSUB -W 00:05
 #BSUB -e log #%J.err
 #BSUB -o log #%J.out
-#BSUB -R "span[ptile=1]"
+#BSUB -R "span[ptile=2]"
 ##BSUB -m 'r13n45'
 
 module purge
@@ -33,7 +32,7 @@ rm -rf log out.txt
 # mpirun -np 2 ./smallest_eigenvalue.out -n 40 -ksp_type preonly -pc_type lu -pc_factor_mat_solver_type mumps >out.txt
 
 mpirun -np 2 ./implicit_scheme.out -ksp_type richardson \
- -pc_type jacobi >out.txt
+ -pc_type jacobi -log_view >out.txt
 
 # mpirun -np 1 ./smallest_eigenvalue.out -n 4 -ksp_type richardson -pc_type asm >out.txt
 
@@ -72,9 +71,9 @@ Successfully completed.
 
 Resource usage summary:
 
-    CPU time :                                   9.05 sec.
-    Max Memory :                                 42 MB
-    Average Memory :                             42.00 MB
+    CPU time :                                   7.17 sec.
+    Max Memory :                                 11 MB
+    Average Memory :                             11.00 MB
     Total Requested Memory :                     -
     Delta Memory :                               -
     Max Swap :                                   -

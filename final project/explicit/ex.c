@@ -3,26 +3,32 @@ static char help[] = "Slove the 1D heat trans explicitly";
 #include <petscmat.h>
 #include <petscmath.h>
 #include <math.h>
+#include <petsctime.h>
+#include <petscsys.h>
 
-int main(int argc,char **args)
+int main(int argc,char **argv)
 {
   Vec            x, u, ut, f, u0;          /* approx solution, RHS, exact solution */
   Mat            A;                /* linear system matrix */
   PetscReal      norm=0.0,tol=10.*PETSC_MACHINE_EPSILON,normt=1.0;  /* norm of solution error */
   PetscErrorCode ierr;
   PetscInt       i,n = 101,col[3],its,rstart,rend,nlocal,rank;
-  PetscScalar    left = 0.0, right = 1.0, l=2.0, cfl = 0.001;
+  PetscScalar    left = 0.0, right = 1.0, l=2.0, cfl = 0.0001;
   PetscScalar    zero = 0.0,value[3],omega = 1.6,dx = (right - left) * 1.0 / (n - 1), kappa = 1.0, dt = dx * cfl, rho=1, c=1, h=0, t=0;
   PetscScalar    pi = M_PI;
   PetscInt       step = 0;
 
-  ierr = PetscInitialize(&argc,&args,(char*)0,help);if (ierr) return ierr;
+  PetscLogDouble t1,t2;
+
+  ierr = PetscInitialize(&argc,&argv,(char*)0,help);if (ierr) return ierr;
   ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
   ierr = PetscOptionsGetInt(NULL,NULL,"-n",&n,NULL);CHKERRQ(ierr);
   dx   = (right - left)*1.0 / (n-1);
   dt   = dx * cfl;
   PetscScalar    at = kappa*dt/(rho*c*dx*dx), bt = dt/(rho*c), ct = 2*dx*h/kappa;
-    at *= omega; bt *= omega;  // SOR method
+    // at *= omega; bt *= omega;  // SOR method
+  ierr = PetscGetCPUTime(&t1);CHKERRQ(ierr);
+  // ierr = PetscCall(PetscGetCpuTime(&t1));CHKERRQ(ierr);
 
   ierr = VecCreate(PETSC_COMM_WORLD,&x);CHKERRQ(ierr);
   ierr = VecSetSizes(x,PETSC_DECIDE,n);CHKERRQ(ierr);
@@ -87,14 +93,20 @@ int main(int argc,char **args)
      step = step + 1;
      normt= norm;
      ierr = MatMultAdd(A,ut,f,u);
-     ierr = VecCopy(u,u0);CHKERRQ(ierr);
-     ierr = VecAXPY(u0,-1,ut);CHKERRQ(ierr);
-     ierr = VecNorm(u0,NORM_2,&norm);CHKERRQ(ierr);
+    //  ierr = VecCopy(u,u0);CHKERRQ(ierr);
+     ierr = VecAXPY(ut,-1,u);CHKERRQ(ierr);
+     ierr = VecNorm(ut,NORM_2,&norm);CHKERRQ(ierr);
     //  ierr = PetscPrintf(PETSC_COMM_WORLD,"step = %d, norm = %g\n",step,(double)norm);CHKERRQ(ierr);
     //  ierr = VecView(u,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
   }
+  // ierr = PetscCall(PetscGetCpuTime(&t2));CHKERRQ(ierr);
+  ierr = PetscGetCPUTime(&t2);CHKERRQ(ierr);
+  // ierr = PetscPrintf(PETSC_COMM_WORLD,"step = %d, norm = %g, runtime = %f\n",step,(double)norm,t2 - t1);CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"step = %d, norm = %g\n",step,(double)norm);CHKERRQ(ierr);
   ierr = VecView(u,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
+
+  
+
 
   /*
      Free work space.  All PETSc objects should be destroyed when they
