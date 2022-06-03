@@ -1,11 +1,11 @@
 #!/bin/bash
 #BSUB -J mytest
-#BSUB -q debug
-#BSUB -n 2
+#BSUB -q ser
+#BSUB -n 1
 ## BSUB -W 00:05
 #BSUB -e log #%J.err
 #BSUB -o log #%J.out
-#BSUB -R "span[ptile=2]"
+#BSUB -R "span[ptile=1]"
 ##BSUB -m 'r13n45'
 
 module purge
@@ -16,7 +16,7 @@ rm -rf log out.txt
 
 # mpirun -np 2 ./smallest_eigenvalue.out -n 40 -ksp_type preonly -pc_type lu -pc_factor_mat_solver_type mumps >out.txt
 
-mpirun -np 2 ./implicit_scheme.out -ksp_type richardson \
+mpirun -np 1 ./implicit_scheme.out -flagr 1 -ksp_type richardson \
  -pc_type jacobi -log_view >out.txt
 
 # mpirun -np 1 ./smallest_eigenvalue.out -n 4 -ksp_type richardson -pc_type asm >out.txt

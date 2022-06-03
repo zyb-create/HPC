@@ -1,0 +1,104 @@
+Sender: LSF System <lsfadmin@r01n06>
+Subject: Job 3814729: <mytest> in cluster <sustchpc> Exited
+
+Job <mytest> was submitted from host <login05> by user <mae-zhangyb> in cluster <sustchpc> at Fri Jun  3 16:59:48 2022.
+Job was executed on host(s) <r01n06>, in queue <ser>, as user <mae-zhangyb> in cluster <sustchpc> at Fri Jun  3 16:59:50 2022.
+</work/mae-zhangyb> was used as the home directory.
+</work/mae-zhangyb/test/HPC/HPC_Homework/final project/test> was used as the working directory.
+Started at Fri Jun  3 16:59:50 2022.
+Terminated at Fri Jun  3 16:59:53 2022.
+Results reported at Fri Jun  3 16:59:53 2022.
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+#!/bin/bash
+#BSUB -J mytest
+#BSUB -q ser
+#BSUB -n 1
+## BSUB -W 00:05
+#BSUB -e log #%J.err
+#BSUB -o log #%J.out
+#BSUB -R "span[ptile=1]"
+##BSUB -m 'r13n45'
+
+module purge
+module load intel/2018.4
+module load mpi/intel/2018.4
+
+rm -rf log out.txt
+
+# mpirun -np 2 ./smallest_eigenvalue.out -n 40 -ksp_type preonly -pc_type lu -pc_factor_mat_solver_type mumps >out.txt
+
+mpirun -np 1 ./ex1.out >out.txt
+
+# mpirun -np 1 ./smallest_eigenvalue.out -n 4 -ksp_type richardson -pc_type asm >out.txt
+
+#  -ksp_gmres_restart 30 -ksp_rtol 1.0e-10 \
+#  -ksp_atol 1.0e-50 -ksp_max_it 1500 \
+#  -ksp_gmres_modifiedgramschmidt \
+#  -pc_type asm \
+#  -ksp_rtol 1.0e-10 -sub_ksp_type richardson \
+#  -sub_pc_type icc -ksp_monitor_short \
+#  -ksp_converged_reason \
+#  -ksp_view > out.txt
+
+# mpirun -np 1 ./smallest_eigenvalue.out -n 4 -ksp_type gmres \
+#  -ksp_gmres_restart 30 -ksp_rtol 1.0e-10 \
+#  -ksp_atol 1.0e-50 -ksp_max_it 1500 \
+#  -ksp_gmres_modifiedgramschmidt \
+#  -pc_type asm \
+#  -ksp_rtol 1.0e-10 -sub_ksp_type richardson \
+#  -sub_pc_type icc -ksp_monitor_short \
+#  -ksp_converged_reason \
+#  -ksp_view > out.txt
+
+# -mat_view -n 20 >out.txt
+# -ksp_type richardson -pc_type asm \
+#   -pc_asm_blocks 4 -pc_asm_overlap 0 -pc_asm_local_type additive \
+#   -sub_pc_type lu \
+#   -snes_monitor_short -snes_converged_reason -snes_view \
+#   -log_view
+
+#mpirun -np 3 ./ex5.out -ksp_type gmres \
+#  -ksp_gmres_restart 30 -ksp_rtol 1.0e-10 \
+
+(... more ...)
+------------------------------------------------------------
+
+Exited with exit code 59.
+
+Resource usage summary:
+
+    CPU time :                                   0.16 sec.
+    Max Memory :                                 3 MB
+    Average Memory :                             3.00 MB
+    Total Requested Memory :                     -
+    Delta Memory :                               -
+    Max Swap :                                   -
+    Max Processes :                              1
+    Max Threads :                                2
+    Run time :                                   2 sec.
+    Turnaround time :                            5 sec.
+
+The output (if any) follows:
+
+[0]PETSC ERROR: --------------------- Error Message --------------------------------------------------------------
+[0]PETSC ERROR: Object is in wrong state
+[0]PETSC ERROR: Cannot set coordinates until after DMDA has been setup
+[0]PETSC ERROR: See https://petsc.org/release/faq/ for trouble shooting.
+[0]PETSC ERROR: Petsc Release Version 3.16.6, Mar 30, 2022 
+[0]PETSC ERROR: ./ex1.out on a  named r01n06 by mae-zhangyb Fri Jun  3 16:59:50 2022
+[0]PETSC ERROR: Configure options --with-mpi-dir=/share/intel/2018u4/compilers_and_libraries_2018.5.274/linux/mpi/intel64 --with-blaslapack-dir=/share/intel/2018u4/compilers_and_libraries_2018.5.274/linux/mkl --with-debugging=no --prefix=/work/mae-zhangyb/lib/petsc-3.16.6 --download-hypre --download-hdf5 --download-metis COPTFLAGS="-O3 -march=native -mtune=native" CXXOPTFLAGS="-O3 -march=native -mtune=native" FOPTFLAGS="-O3 -march=native -mtune=native" --with-scalapack-include=/share/intel/2018u4/compilers_and_libraries_2018.5.274/linux/mkl/include --with-scalapack-lib="-L/share/intel/2018u4/compilers_and_libraries_2018.5.274/linux/mkl/lib/intel64/ -lmkl_blacs_intelmpi_lp64 -lmkl_scalapack_lp64"
+[0]PETSC ERROR: #1 DMDASetUniformCoordinates() at /work/mae-zhangyb/lib/pks/petsc-3.16.6/src/dm/impls/da/gr1.c:38
+[0]PETSC ERROR: ------------------------------------------------------------------------
+[0]PETSC ERROR: Caught signal number 11 SEGV: Segmentation Violation, probably memory access out of range
+[0]PETSC ERROR: Try option -start_in_debugger or -on_error_attach_debugger
+[0]PETSC ERROR: or see https://petsc.org/release/faq/#valgrind
+[0]PETSC ERROR: or try http://valgrind.org on GNU/linux and Apple MacOS to find memory corruption errors
+[0]PETSC ERROR: configure using --with-debugging=yes, recompile, link, and run 
+[0]PETSC ERROR: to get more information on the crash.
+[0]PETSC ERROR: #2 User provided function() at unknown file:0
+[0]PETSC ERROR: Run with -malloc_debug to check if memory corruption is causing the crash.
+application called MPI_Abort(MPI_COMM_WORLD, 59) - process 0

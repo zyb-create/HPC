@@ -13,8 +13,9 @@ static char help[] = "Solves a tridiagonal linear system.\n\n";
 #include <petscksp.h>
 #include <petscmath.h>
 #include <math.h>
+#include <petscviewerhdf5.h>
 
-int main(int argc,char **args)
+int main(int argc,char **argv)
 {
   Vec            x, b, u, ut, u0, f;          /* approx solution, RHS, exact solution */
   Mat            A;                /* linear system matrix */
@@ -27,14 +28,45 @@ int main(int argc,char **args)
   PetscScalar    at = kappa*dt/(rho*c*dx*dx), bt = dt/(rho*c), ct = 2*dx*h/kappa, left = 0, right = 1, l=2.0;
   PetscScalar    pi = M_PI;
   PetscInt       step = 0;
+  PetscBool      flgw = PETSC_FALSE, flgr = PETSC_FALSE;
+  PetscViewer    viewer;
+  Vec            vN;
 
   at *= omega; bt *= omega;  // SOR method
 
-  ierr = PetscInitialize(&argc,&args,(char*)0,help);if (ierr) return ierr;
+  ierr = PetscInitialize(&argc,&argv,(char*)0,help);if (ierr) return ierr;
   ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
   ierr = PetscOptionsGetInt(NULL,NULL,"-n",&n,NULL);CHKERRQ(ierr);
   dx   = (right - left)*1.0 / (n-1);
   dt   = dx * 0.8;
+
+  ierr = PetscOptionsGetBool(NULL,NULL,"-flagw",&flgw,NULL);CHKERRQ(ierr);
+  ierr = PetscOptionsGetBool(NULL,NULL,"-flagr",&flgr,NULL);CHKERRQ(ierr);
+
+  if(rank == 0){
+     ierr = VecCreate(PETSC_COMM_WORLD,&vN);CHKERRQ(ierr);
+     ierr = VecSetSizes(vN,1,1);CHKERRQ(ierr);
+     ierr = VecSetFromOptions(vN);CHKERRQ(ierr);
+     ierr = PetscObjectSetName((PetscObject)vN,"vN");CHKERRQ(ierr);
+     ierr = VecSetValue(vN,0,n,INSERT_VALUES);CHKERRQ(ierr);
+     if (flgr)
+     {
+        ierr = PetscViewerHDF5Open(PETSC_COMM_WORLD, "vN.h5", FILE_MODE_READ, &viewer);CHKERRQ(ierr);
+        ierr = VecLoad(vN, viewer);CHKERRQ(ierr);
+        ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
+        PetscInt index = 0;
+        ierr = VecGetValues(vN,1,&index,value);CHKERRQ(ierr);
+        n = (PetscInt)(value[0]);
+        dx = (right - left)*1.0/(n-1);
+        dt = dx * 0.8;
+        ierr = PetscPrintf(PETSC_COMM_WORLD, "restore successfully! n = %d, dx = %f, dt = %f\n",n, dx, dt);CHKERRQ(ierr);
+     }
+     if(flgw){
+        ierr = PetscViewerHDF5Open(PETSC_COMM_WORLD, "vN.h5", FILE_MODE_WRITE, &viewer);CHKERRQ(ierr);
+        ierr = VecView(vN, viewer);CHKERRQ(ierr);
+        ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
+     }
+  }
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
          Compute the matrix and right-hand-side vector that define
@@ -54,6 +86,7 @@ int main(int argc,char **args)
   ierr = VecDuplicate(x,&u0);CHKERRQ(ierr);
   ierr = VecDuplicate(x,&b);CHKERRQ(ierr);
   ierr = VecDuplicate(x,&f);CHKERRQ(ierr);
+  ierr = PetscObjectSetName((PetscObject)u,"u");CHKERRQ(ierr);
 
   /* Identify the starting and ending mesh points on each
      processor for the interior part of the mesh. We let PETSc decide
@@ -77,6 +110,8 @@ int main(int argc,char **args)
   ierr = MatSetSizes(A,nlocal,nlocal,n,n);CHKERRQ(ierr);
   ierr = MatSetFromOptions(A);CHKERRQ(ierr);
   ierr = MatSetUp(A);CHKERRQ(ierr);
+//   ierr = MatZeroEntries(A);CHKERRQ(ierr);
+  
 
   /*
      Assemble matrix.
@@ -118,7 +153,7 @@ int main(int argc,char **args)
   /* Assemble the matrix */
   ierr = MatAssemblyBegin(A,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
   ierr = MatAssemblyEnd(A,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
-  ierr = MatView(A,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
+//   ierr = MatView(A,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
 
   /*
      Set exact solution; then compute right-hand-side vector.
@@ -132,14 +167,6 @@ int main(int argc,char **args)
   ierr = VecCopy(x,b);CHKERRQ(ierr);
 
   ierr = VecExp(b);CHKERRQ(ierr);
-  // if(rank == 0){
-  //    i    = 0;
-  //    ierr = VecSetValue(b,i,0,INSERT_VALUES);CHKERRQ(ierr);
-  //    i    = n-1;
-  //    ierr = VecSetValue(b,i,0,INSERT_VALUES);CHKERRQ(ierr);
-  // }  
-  // ierr = VecAssemblyBegin(b);CHKERRQ(ierr);
-  // ierr = VecAssemblyEnd(b);CHKERRQ(ierr);
 
   ierr = VecAXPY(b,1,f);CHKERRQ(ierr);
 
@@ -179,7 +206,21 @@ int main(int argc,char **args)
   */
   ierr = KSPSetFromOptions(ksp);CHKERRQ(ierr);
 
-  ierr = VecSet(u,zero);CHKERRQ(ierr);
+  if (flgr)
+  {
+     ierr = PetscViewerHDF5Open(PETSC_COMM_WORLD, "mvAu.h5", FILE_MODE_READ, &viewer);CHKERRQ(ierr);
+     ierr = VecLoad(u, viewer);CHKERRQ(ierr);
+     ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
+     ierr = PetscPrintf(PETSC_COMM_WORLD, "restore successfully!\n");CHKERRQ(ierr);
+     ierr = VecCopy(u,b);CHKERRQ(ierr);    
+     ierr = VecAXPY(b,1,f);CHKERRQ(ierr);
+  }else{
+     ierr = VecSet(u,zero);CHKERRQ(ierr);
+  }
+
+  if(flgw){
+     ierr = PetscViewerHDF5Open(PETSC_COMM_WORLD,"mvAu.h5",FILE_MODE_WRITE,&viewer);CHKERRQ(ierr);
+  }
   while(PetscAbsReal(norm-normt) > tol && step < 10000){
      ierr = VecCopy(u,ut);CHKERRQ(ierr);
      step = step + 1;
@@ -189,43 +230,24 @@ int main(int argc,char **args)
      ierr = VecAXPY(u0,-1,ut);CHKERRQ(ierr);
      ierr = VecNorm(u0,NORM_2,&norm);CHKERRQ(ierr);
      ierr = VecCopy(u,b);CHKERRQ(ierr);    
-    //  if(rank == 0){
-    //     i    = 0;
-    //     ierr = VecSetValue(b,i,-at*ct,ADD_VALUES);CHKERRQ(ierr);
-    //     // ierr = VecSetValue(b,i,-at*ct,INSERT_VALUES);CHKERRQ(ierr);
-    //     i    = n-1;
-    //     ierr = VecSetValue(b,i,at*ct,ADD_VALUES);CHKERRQ(ierr);
-    //     // ierr = VecSetValue(b,i,at*ct,INSERT_VALUES);CHKERRQ(ierr);
-    //   }
-    //   ierr = VecAssemblyBegin(b);CHKERRQ(ierr);
-    //   ierr = VecAssemblyEnd(b);CHKERRQ(ierr);
-      ierr = VecAXPY(b,1,f);CHKERRQ(ierr);
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"step = %d, norm = %g\n",step,(double)norm);CHKERRQ(ierr);
+     ierr = VecAXPY(b,1,f);CHKERRQ(ierr);
+     ierr = PetscPrintf(PETSC_COMM_WORLD, "step = %d, norm = %g\n", step, (double)norm);
+     CHKERRQ(ierr);
+     if (step%10==0 && flgw)
+     {
+      //   ierr = PetscViewerHDF5Open(PETSC_COMM_WORLD, "mvAu.h5", FILE_MODE_WRITE, &viewer);CHKERRQ(ierr);
+        ierr = VecView(u, viewer);CHKERRQ(ierr);
+     }
    }
-  ierr = VecView(u,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
+//   ierr = VecView(u,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
 //   ierr = PetscPrintf(PETSC_COMM_WORLD,"solution = %f\n",1.0/norm);CHKERRQ(ierr);
-
-
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-                      Solve the linear system
-     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  /*
-     Solve linear system
-  */
-//   ierr = KSPSolve(ksp,b,x);CHKERRQ(ierr);
-
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-                      Check solution and clean up
-     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-  /*
-     Check the error
-  */
-//   ierr = VecAXPY(x,-1.0,u);CHKERRQ(ierr);
-//   ierr = VecNorm(x,NORM_2,&norm);CHKERRQ(ierr);
-//   ierr = KSPGetIterationNumber(ksp,&its);CHKERRQ(ierr);
-//   if (norm < tol) {
-//     ierr = PetscPrintf(PETSC_COMM_WORLD,"Norm of error %g, Iterations %D\n",(double)norm,its);CHKERRQ(ierr);
-// //   }
+  if(flgw){
+   //   ierr = PetscObjectSetName((PetscObject)A,"A");CHKERRQ(ierr);
+   //   ierr = PetscViewerHDF5Open(PETSC_COMM_WORLD,"mvAu.h5",FILE_MODE_WRITE,&viewer);CHKERRQ(ierr);
+   // //   ierr = MatView(A,viewer);CHKERRQ(ierr); 
+     ierr = VecView(u,viewer);CHKERRQ(ierr);    
+     ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
+  }
 
   /*
      Free work space.  All PETSc objects should be destroyed when they
@@ -235,6 +257,7 @@ int main(int argc,char **args)
   ierr = VecDestroy(&ut);CHKERRQ(ierr); ierr = MatDestroy(&A);CHKERRQ(ierr);
   ierr = KSPDestroy(&ksp);CHKERRQ(ierr); ierr = VecDestroy(&b);CHKERRQ(ierr);
   ierr = VecDestroy(&u0);CHKERRQ(ierr); ierr = VecDestroy(&f);CHKERRQ(ierr);
+  ierr = VecDestroy(&vN);CHKERRQ(ierr);
 
   /*
      Always call PetscFinalize() before exiting a program.  This routine
@@ -247,3 +270,10 @@ int main(int argc,char **args)
 }
 
 // EOF
+//   if(flg){
+//      ierr = PetscPrintf(PETSC_COMM_WORLD,"OK\n",1.0/norm);CHKERRQ(ierr);
+//      ierr = PetscViewerCreate(PETSC_COMM_WORLD,&viewer);CHKERRQ(ierr);
+//      ierr = PetscViewerSetType(viewer,PETSCVIEWERHDF5);CHKERRQ(ierr);
+//      ierr = PetscViewerFileSetMode(viewer,FILE_MODE_WRITE);CHKERRQ(ierr);
+//      ierr = PetscViewerFileSetName(viewer,"mvAu.h5");CHKERRQ(ierr);
+//   }
