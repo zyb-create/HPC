@@ -1,16 +1,17 @@
 #!/bin/bash
 #BSUB -J mytest
 #BSUB -q ser
-#BSUB -n 64
+#BSUB -n 1
 ## BSUB -W 00:05
 #BSUB -e log #%J.err
 #BSUB -o log #%J.out
-#BSUB -R "span[ptile=40]"
+#BSUB -R "span[ptile=1]"
 ##BSUB -m 'r13n45'
 
 module purge
 module load intel/2018.4
 module load mpi/intel/2018.4
+module load valgrind/3.14.0
 
 rm -rf log out.txt
 
@@ -18,7 +19,11 @@ rm -rf log out.txt
 
 # mpirun -np 2 ./explicit_scheme.out >out.txt
 # mpirun -np 4 ./ex.out -log_summary >out.txt
-mpirun -np 64 ./ex.out -n 5001 -log_view >out64.txt
+# mpirun -np 1 valgrind --leak-check=full ./ex.out -n 101 -log_view >out.txt
+# mpirun -np 1 valgrind --tool=memcheck ./ex.out -n 101 -log_view >out.txt
+# mpirun -np 1 valgrind --track-origins=yes ./ex.out -n 101 -log_view >out.txt
+# valgrind mpirun -np 1 ./ex.out -n 101 -log_view >out.txt
+valgrind mpirun -np 1 ./ex.out -n 101 -log_view >out.txt
 
 # mpirun -np 1 ./smallest_eigenvalue.out -n 4 -ksp_type richardson -pc_type asm >out.txt
 

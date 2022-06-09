@@ -32,7 +32,7 @@ int main(int argc,char **argv)
   PetscViewer    viewer;
   Vec            vN;
 
-  at *= omega; bt *= omega;  // SOR method
+  //at *= omega; bt *= omega;  // SOR method
 
   ierr = PetscInitialize(&argc,&argv,(char*)0,help);if (ierr) return ierr;
   ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank);CHKERRQ(ierr);
@@ -49,6 +49,8 @@ int main(int argc,char **argv)
      ierr = VecSetFromOptions(vN);CHKERRQ(ierr);
      ierr = PetscObjectSetName((PetscObject)vN,"vN");CHKERRQ(ierr);
      ierr = VecSetValue(vN,0,n,INSERT_VALUES);CHKERRQ(ierr);
+     ierr = VecAssemblyBegin(vN);CHKERRQ(ierr);
+     ierr = VecAssemblyEnd(vN);CHKERRQ(ierr);
      if (flgr)
      {
         ierr = PetscViewerHDF5Open(PETSC_COMM_WORLD, "vN.h5", FILE_MODE_READ, &viewer);CHKERRQ(ierr);
@@ -66,8 +68,8 @@ int main(int argc,char **argv)
         ierr = VecView(vN, viewer);CHKERRQ(ierr);
         ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
      }
+     ierr = VecDestroy(&vN);CHKERRQ(ierr);
   }
-
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
          Compute the matrix and right-hand-side vector that define
          the linear system, Ax = b.
@@ -221,7 +223,7 @@ int main(int argc,char **argv)
   if(flgw){
      ierr = PetscViewerHDF5Open(PETSC_COMM_WORLD,"mvAu.h5",FILE_MODE_WRITE,&viewer);CHKERRQ(ierr);
   }
-  while(PetscAbsReal(norm-normt) > tol && step < 10000){
+  while(PetscAbsReal(norm-normt) > tol && step < 1e10){
      ierr = VecCopy(u,ut);CHKERRQ(ierr);
      step = step + 1;
      normt= norm;
@@ -231,15 +233,14 @@ int main(int argc,char **argv)
      ierr = VecNorm(u0,NORM_2,&norm);CHKERRQ(ierr);
      ierr = VecCopy(u,b);CHKERRQ(ierr);    
      ierr = VecAXPY(b,1,f);CHKERRQ(ierr);
-     ierr = PetscPrintf(PETSC_COMM_WORLD, "step = %d, norm = %g\n", step, (double)norm);
-     CHKERRQ(ierr);
+     ierr = PetscPrintf(PETSC_COMM_WORLD, "step = %d, norm = %g\n", step, (double)norm);CHKERRQ(ierr);
      if (step%10==0 && flgw)
      {
       //   ierr = PetscViewerHDF5Open(PETSC_COMM_WORLD, "mvAu.h5", FILE_MODE_WRITE, &viewer);CHKERRQ(ierr);
         ierr = VecView(u, viewer);CHKERRQ(ierr);
      }
    }
-//   ierr = VecView(u,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
+  // ierr = VecView(u,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
 //   ierr = PetscPrintf(PETSC_COMM_WORLD,"solution = %f\n",1.0/norm);CHKERRQ(ierr);
   if(flgw){
    //   ierr = PetscObjectSetName((PetscObject)A,"A");CHKERRQ(ierr);
@@ -257,7 +258,6 @@ int main(int argc,char **argv)
   ierr = VecDestroy(&ut);CHKERRQ(ierr); ierr = MatDestroy(&A);CHKERRQ(ierr);
   ierr = KSPDestroy(&ksp);CHKERRQ(ierr); ierr = VecDestroy(&b);CHKERRQ(ierr);
   ierr = VecDestroy(&u0);CHKERRQ(ierr); ierr = VecDestroy(&f);CHKERRQ(ierr);
-  ierr = VecDestroy(&vN);CHKERRQ(ierr);
 
   /*
      Always call PetscFinalize() before exiting a program.  This routine

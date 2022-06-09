@@ -5,18 +5,21 @@
 ## BSUB -W 00:05
 #BSUB -e log #%J.err
 #BSUB -o log #%J.out
-#BSUB -R "span[ptile=1]"
+##BSUB -R "span[ptile=1]"
 ##BSUB -m 'r13n45'
 
 module purge
 module load intel/2018.4
 module load mpi/intel/2018.4
+module load valgrind/3.14.0
 
 rm -rf log out.txt
 
 # mpirun -np 2 ./smallest_eigenvalue.out -n 40 -ksp_type preonly -pc_type lu -pc_factor_mat_solver_type mumps >out.txt
 
-mpirun -np 1 ./implicit_scheme.out -flagr 1 -ksp_type richardson \
+# valgrind --leak-check=full mpirun -np 1 ./implicit_scheme.out -n 101 -ksp_type richardson \
+#  -pc_type jacobi -log_view >out.txt
+mpirun -np 1 ./implicit_scheme.out -n 101 -ksp_type richardson \
  -pc_type jacobi -log_view >out.txt
 
 # mpirun -np 1 ./smallest_eigenvalue.out -n 4 -ksp_type richardson -pc_type asm >out.txt

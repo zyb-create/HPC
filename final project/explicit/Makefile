@@ -59,7 +59,7 @@ OBJ := $(patsubst %.c,%.o,$(SRC))
 
 #Rules
 $(EXEC) : $(OBJ)
-	$(LINK.cc) $(LDLIBS) -o $@ $^
+	$(LINK.cc) $(LDLIBS) -Wall -g -o $@ $^
 	$(RM) $(OBJ)
 %.o : %.c 
 	$(COMPILE.c) $(OUTPUT_OPTION) $<
